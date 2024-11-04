@@ -1,7 +1,7 @@
 import * as middy from 'middy';
 import { cors } from 'middy/middlewares';
 import { getUserId } from '../utils.mjs';
-import { createLogger } from '../../utils/logger';
+import { createLogger } from '../../utils/logger.mjs';
 import { createTodo } from '../../businessLogic/todos.mjs';
 require('source-map-support/register');
 
