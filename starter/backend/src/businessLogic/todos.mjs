@@ -14,13 +14,11 @@ export async function getTodos(userId) {
 export async function createTodo(createTodoRequest, userId) {
     logger.info('Creating a todo item');
     const todoId = uuid.v4();
-    const s3AttachmentUrl = attachmentUtils.getAttachmentUrl(todoId);
-
     const newTodo = {
         userId,
         todoId,
         createdAt: new Date().toISOString(),
-        attachmentUrl: s3AttachmentUrl,
+        attachmentUrl: null,
         done: false,
         ...createTodoRequest,
     };
@@ -28,17 +26,15 @@ export async function createTodo(createTodoRequest, userId) {
     return todosAccess.createTodoItem(newTodo);
 }
 
-export async function updateTodo(userId, todoId, updateTodoRequest) {
-    logger.info('Updating a todo item');
-    const item = await todosAccess.getTodoItem(todoId, userId);
-
-    if (!item) throw new Error('Item not found');
-
-    if (item.userId !== userId) {
-        throw new Error('User not authorized to update item');
+export async function updateTodo(todoId, userId, updateToDo) {
+    try {
+      logger.info("Updating a todo:", { userId, todoId });
+      return await todosAccess.updateTodoItem(todoId, userId, updateToDo);
+    } catch (error) {
+      logger.error("Updating todo error:", { userId, todoId, error });
+      throw error;
     }
-    return todosAccess.updateTodoItem(userId, todoId, updateTodoRequest);
-}
+  }
 
 export async function updateTodoNote(userId, todoId, note) {
     logger.info('Updating todo note');
@@ -69,4 +65,14 @@ export async function deleteTodo(todoId, userId) {
 export async function createAttachmentPresignUrl(todoId) {
     logger.info('Generating upload url');
     return attachmentUtils.generateUploadUrl(todoId);
+}
+
+export async function updateAttachmentPresignedUrl(todoId, userId, attachmentUrl) {
+    try {
+        logger.info("Updating attachment presigned URL:", { userId, todoId });
+        return await todosAccess.updateTodoAttachmentUrl(todoId, userId, attachmentUrl);
+    } catch (error) {
+        logger.error("Updating attachment presigned URL error :", { userId, todoId, error });
+        throw error;
+    }
 }

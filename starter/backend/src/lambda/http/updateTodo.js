@@ -1,35 +1,33 @@
-import * as middy from 'middy';
-import { cors, httpErrorHandler } from 'middy/middlewares';
-import { getUserId } from '../utils.mjs';
-import { updateTodo } from '../../businessLogic/todos.mjs';
-require('source-map-support/register');
+import middy from '@middy/core'
+import httpErrorHandler from '@middy/http-error-handler'
+import { updateTodo } from '../../businessLogic/todos.mjs'
+import { getUserId } from '../utils.mjs'
+import httpCors from '@middy/http-cors'
+import { createLogger } from '../../utils/logger.mjs'
 
-export const handler = middy(async (event) => {
-  const todoId = event.pathParameters.todoId;
-  const updatedTodo = JSON.parse(event.body);
-  const userId = getUserId(event);
+const logger = createLogger('UpdateTodo')
 
-  try {
-    await updateTodo(userId, todoId, updatedTodo);
+export const handler = middy()
+  .use(httpErrorHandler())
+  .use(
+    httpCors({
+      credentials: true
+    })
+  )
+  .handler(async (event) => {
+    const newTodo = JSON.parse(event.body)
+    const todoId = event.pathParameters.todoId
+    const userId = getUserId(event)
+    const updatedTodo = await updateTodo(todoId, userId, newTodo)
+    logger.info('Todo updated') 
     return {
       statusCode: 200,
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true
       },
-      body: ''
-    };
-  } catch (error) {
-    return {
-      statusCode: 500,
       body: JSON.stringify({
-        message: error.message
+        items: updatedTodo
       })
-    };
-  }
-});
-
-handler.use(httpErrorHandler()).use(
-  cors({
-    credentials: true
+    }
   })
-);

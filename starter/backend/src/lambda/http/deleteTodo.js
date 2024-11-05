@@ -9,13 +9,15 @@ export const handler = middy(async (event) => {
   const userId = getUserId(event);
 
   try {
-    await deleteTodo(todoId, userId);
+    const dTodo = await deleteTodo(todoId, userId);
     return {
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
       statusCode: 204,
-      body: ''
+      body: JSON.stringify({
+        item: dTodo
+      })
     };
   } catch (error) {
     console.log('Delte Todo error: ' + error)

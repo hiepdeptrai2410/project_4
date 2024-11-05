@@ -7,6 +7,8 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 provider:
   name: aws
@@ -28,6 +30,21 @@ provider:
       SIGNED_URL_EXPIRATION: 3600
       INDEX_NAME: ${self:provider.environment.TODOS_CREATED_AT_INDEX}
 
+custom:
+  documentation:
+    api:
+      info:
+        version: v1.0.0
+        title: Todos App
+        description: Serverless app for todos
+    models:
+      - name: CreateTodoRequest
+        contentType: 'application/json'
+        schema: ${file(models/create-todo-model.json)}
+      - name: UpdateTodoRequest
+        contentType: application/json
+        schema: ${file(models/update-todo-model.json)}
+
 functions:
 
   Auth:
@@ -47,6 +64,9 @@ functions:
         Action:
           - dynamodb:Query
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action: xray:PutTraceSegments
+        Resource: '*'
 
   # TODO: Configure this function
   CreateTodo:
@@ -65,6 +85,9 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action: xray:PutTraceSegments
+        Resource: '*'
 
   # TODO: Configure this function
   UpdateTodo:
@@ -83,6 +106,11 @@ functions:
         Action:
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+        Resource:
+          - "*"
 
   # TODO: Configure this function
   DeleteTodo:
@@ -99,6 +127,9 @@ functions:
           - dynamodb:DeleteItem
           - dynamodb:GetItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action: xray:PutTraceSegments
+        Resource: '*'
 
   # TODO: Configure this function
   GenerateUploadUrl:
@@ -128,10 +159,22 @@ resources:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
           gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-          gatewayresponse.header.Access-Control-Allow-Methods: "'GET,OPTIONS,POST'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+          gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
         ResponseType: DEFAULT_4XX
         RestApiId:
-          Ref: ApiGatewayRestApi
+          Ref: "ApiGatewayRestApi"
+    GatewayAPIResponse5xx:
+      Type: "AWS::ApiGateway::GatewayResponse"
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+          gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+          gatewayresponse.header.Access-Control-Allow-Methods: "'DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT'"
+          gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
+        ResponseType: DEFAULT_5XX
+        RestApiId:
+          Ref: "ApiGatewayRestApi"
     
     # DynamoDB table
     TodosTable:
@@ -185,7 +228,7 @@ resources:
                 - POST
                 - DELETE
                 - HEAD
-              MaxAge: 3000
+              MaxAge: 300
     
     # BucketPolicy
     BucketPolicy:

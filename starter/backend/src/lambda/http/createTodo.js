@@ -19,7 +19,7 @@ export const handler = middy(async (event) => {
       headers: {
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify({ item }),
+      body: JSON.stringify({ item: item }),
     };
   } catch (error) {
     return {
