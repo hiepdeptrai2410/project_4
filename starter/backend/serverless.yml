@@ -1,7 +1,7 @@
 org: ngochiep2410
 app: serverless-todo-app-4
 service: serverless-todo-app-4
-frameworkVersion: "3.32.0"
+frameworkVersion: '3.32.0'
 
 plugins:
   - serverless-webpack
@@ -24,11 +24,11 @@ provider:
     restApi: true
 
   environment:
-      TODOS_TABLE: Todos-${self:provider.stage}
-      TODOS_CREATED_AT_INDEX: CreatedAtIndex
-      ATTACHMENT_S3_BUCKET: udacity-prj4-todo-app-images-${self:provider.stage}
-      SIGNED_URL_EXPIRATION: 3600
-      INDEX_NAME: ${self:provider.environment.TODOS_CREATED_AT_INDEX}
+    TODOS_TABLE: Todos-${self:provider.stage}
+    TODOS_CREATED_AT_INDEX: CreatedAtIndex
+    ATTACHMENT_S3_BUCKET: udacity-prj4-todo-app-images-${self:provider.stage}
+    SIGNED_URL_EXPIRATION: 3600
+    INDEX_NAME: ${self:provider.environment.TODOS_CREATED_AT_INDEX}
 
 custom:
   documentation:
@@ -46,7 +46,6 @@ custom:
         schema: ${file(models/update-todo-model.json)}
 
 functions:
-
   Auth:
     handler: src/lambda/auth/auth0Authorizer.handler
 
@@ -96,7 +95,22 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
           authorizer: Auth
           request:
             schemas:
@@ -106,11 +120,11 @@ functions:
         Action:
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
-      - Effect: "Allow"
+      - Effect: 'Allow'
         Action:
-          - "xray:PutTraceSegments"
+          - 'xray:PutTraceSegments'
         Resource:
-          - "*"
+          - '*'
 
   # TODO: Configure this function
   DeleteTodo:
@@ -163,9 +177,9 @@ resources:
           gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
         ResponseType: DEFAULT_4XX
         RestApiId:
-          Ref: "ApiGatewayRestApi"
+          Ref: 'ApiGatewayRestApi'
     GatewayAPIResponse5xx:
-      Type: "AWS::ApiGateway::GatewayResponse"
+      Type: 'AWS::ApiGateway::GatewayResponse'
       Properties:
         ResponseParameters:
           gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
@@ -174,8 +188,8 @@ resources:
           gatewayresponse.header.Access-Control-Expose-Headers: "'Date,X-Amzn-ErrorType'"
         ResponseType: DEFAULT_5XX
         RestApiId:
-          Ref: "ApiGatewayRestApi"
-    
+          Ref: 'ApiGatewayRestApi'
+
     # DynamoDB table
     TodosTable:
       Type: AWS::DynamoDB::Table
@@ -203,13 +217,13 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
-    
+
     # Bucket
     AttachmentsBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.ATTACHMENT_S3_BUCKET}
-        
+
         PublicAccessBlockConfiguration:
           BlockPublicAcls: false
           BlockPublicPolicy: false
@@ -229,7 +243,7 @@ resources:
                 - DELETE
                 - HEAD
               MaxAge: 300
-    
+
     # BucketPolicy
     BucketPolicy:
       Type: AWS::S3::BucketPolicy
@@ -249,7 +263,7 @@ resources:
     RequestBodyValidator:
       Type: AWS::ApiGateway::RequestValidator
       Properties:
-        Name: "request-body-validator"
+        Name: 'request-body-validator'
         RestApiId:
           Ref: ApiGatewayRestApi
         ValidateRequestBody: true
